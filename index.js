@@ -2,21 +2,20 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
-const { MongoClient } = require('mongodb');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-// Store messages for each room
-const roomMessages = {};
+require('dotenv').config();
+const { MongoClient } = require('mongodb');
+const mongoURI = process.env.MONGO_URI;
+// Initialize MongoDB client
+const client = new MongoClient(mongoURI, {});
 
-const mongoURI = 'mongodb+srv://lydiagraveline20:huffpuff123@cluster1.4ht5yiw.mongodb.net/';
 const dbName = 'dolphin-communication';
 const collectionName = 'chatlog';
 
-// Initialize MongoDB client
-const client = new MongoClient(mongoURI, {});
 
 // Function to connect to MongoDB and return the messages collection
 async function connectToDatabase() {
