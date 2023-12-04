@@ -8,21 +8,11 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-// app.use(
-//   cors({
-//     origin: ["http://localhost:3000", process.env.ORIGIN],
-//   })
-// );
-
+// Serve static files from the 'public' folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 require('dotenv').config();
-// const { MongoClient } = require('mongodb');
 const mongoURI = process.env.MONGO_URI;
-// Initialize MongoDB client
-// const client = new MongoClient(mongoURI, {});
-
-// const dbName = 'dolphin-communication';
-// const collectionName = 'chatlog';
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -64,39 +54,6 @@ async function getRoomMessages(room) {
     throw error;
   }
 }
-
-// Function to connect to MongoDB and return the messages collection
-// async function connectToDatabase() {
-//   //previous method using mongodb
-//   try {
-//     await client.connect();
-//     const db = client.db(dbName);
-//     return db.collection(collectionName);
-//   } catch (error) {
-//     console.error('Error connecting to MongoDB:', error);
-//     throw error;
-//   }
-// }
-
-// // Function to save messages to MongoDB
-// async function saveMessage(room, userId, message) {
-//   try {
-//     const messagesCollection = await connectToDatabase();
-//     const result =  await messagesCollection.insertOne({ room, userId, message });
-//     console.log('Insertion successful:', result);
-//   } catch (error) {
-//     console.error('Error saving message to MongoDB:', error);
-//     throw error;
-//   }
-// }
-
-// // Function to retrieve messages from MongoDB for a room
-// async function getRoomMessages(room) {
-//   const messagesCollection = await connectToDatabase();
-//   const messages = await messagesCollection.find({ room }).toArray();
-//   console.log('Retrieved Messages:', messages);
-//   return messages;
-// }
 
 // Function to leave a room
 function leaveRoom(socket, room) {
@@ -179,8 +136,9 @@ io.of('/room2').on('connection', (socket) => {
   });
 });
 
+// Redirect root URL to serve the 'index.html' file
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 server.listen(3000, () => {
