@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
-// require('dotenv').config();
+const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,24 +17,28 @@ const client = new MongoClient(mongoURI, {});
 const dbName = 'dolphin-communication';
 const collectionName = 'chatlog';
 
+mongoose
+  .connect(process.env.MONGO_URI)
+   .then(x => console.log(`Connected the Database: "${x.connections[0].name}"`))
+  // .catch(err => console.error('Error connecting to mongo', err));
+  // /.then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('Error connecting to MongoDB:', err));
 
-// Function to connect to MongoDB and return the messages collection
-async function connectToDatabase() {
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    return db.collection(collectionName);
-  } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
-    throw error;
-  }
-}
+  // Define a Mongoose schema for the chat message
+const chatMessageSchema = new mongoose.Schema({
+  room: String,
+  userId: String,
+  message: String,
+});
 
-// Function to save messages to MongoDB
+// Create a Mongoose model using the schema
+const ChatMessage = mongoose.model('ChatMessage', chatMessageSchema);
+
+// Function to save messages to MongoDB using Mongoose
 async function saveMessage(room, userId, message) {
   try {
-    const messagesCollection = await connectToDatabase();
-    const result =  await messagesCollection.insertOne({ room, userId, message });
+    const chatMessage = new ChatMessage({ room, userId, message });
+    const result = await chatMessage.save();
     console.log('Insertion successful:', result);
   } catch (error) {
     console.error('Error saving message to MongoDB:', error);
@@ -42,13 +46,50 @@ async function saveMessage(room, userId, message) {
   }
 }
 
-// Function to retrieve messages from MongoDB for a room
+// Function to retrieve messages from MongoDB for a room using Mongoose
 async function getRoomMessages(room) {
-  const messagesCollection = await connectToDatabase();
-  const messages = await messagesCollection.find({ room }).toArray();
-  console.log('Retrieved Messages:', messages);
-  return messages;
+  try {
+    const messages = await ChatMessage.find({ room }).exec();
+    console.log('Retrieved Messages:', messages);
+    return messages;
+  } catch (error) {
+    console.error('Error retrieving messages from MongoDB:', error);
+    throw error;
+  }
 }
+
+// Function to connect to MongoDB and return the messages collection
+// async function connectToDatabase() {
+//   //previous method using mongodb
+//   try {
+//     await client.connect();
+//     const db = client.db(dbName);
+//     return db.collection(collectionName);
+//   } catch (error) {
+//     console.error('Error connecting to MongoDB:', error);
+//     throw error;
+//   }
+// }
+
+// // Function to save messages to MongoDB
+// async function saveMessage(room, userId, message) {
+//   try {
+//     const messagesCollection = await connectToDatabase();
+//     const result =  await messagesCollection.insertOne({ room, userId, message });
+//     console.log('Insertion successful:', result);
+//   } catch (error) {
+//     console.error('Error saving message to MongoDB:', error);
+//     throw error;
+//   }
+// }
+
+// // Function to retrieve messages from MongoDB for a room
+// async function getRoomMessages(room) {
+//   const messagesCollection = await connectToDatabase();
+//   const messages = await messagesCollection.find({ room }).toArray();
+//   console.log('Retrieved Messages:', messages);
+//   return messages;
+// }
 
 // Function to leave a room
 function leaveRoom(socket, room) {
@@ -87,8 +128,6 @@ io.on('connection', (socket) => {
       socket.emit('chat history', history);
     }
   });
-
-
 });
 
 
