@@ -14,5 +14,8 @@
     "mongodb": "^6.3.0",
     "path": "^0.12.7",
     "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.4.11"
   }
 }
