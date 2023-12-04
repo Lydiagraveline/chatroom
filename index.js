@@ -8,14 +8,21 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
+// app.use(
+//   cors({
+//     origin: ["http://localhost:3000", process.env.ORIGIN],
+//   })
+// );
+
+
 require('dotenv').config();
-const { MongoClient } = require('mongodb');
+// const { MongoClient } = require('mongodb');
 const mongoURI = process.env.MONGO_URI;
 // Initialize MongoDB client
-const client = new MongoClient(mongoURI, {});
+// const client = new MongoClient(mongoURI, {});
 
-const dbName = 'dolphin-communication';
-const collectionName = 'chatlog';
+// const dbName = 'dolphin-communication';
+// const collectionName = 'chatlog';
 
 mongoose
   .connect(process.env.MONGO_URI)
