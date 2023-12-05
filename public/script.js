@@ -74,14 +74,16 @@ let socket = io();
 } // join room
 
 function playSound(){
-console.log("play sound!");
+// console.log("play sound!");
 }
 
   // Handle leaving a room
   function leaveRoom() {
     console.log("left room");
-    socket.disconnect();
     socket.emit('leave room', userId);
+
+    socket.disconnect(); // disconnect from the room socket
+
     $('#chat-container').hide();
     $('#room-selection').show();
   }

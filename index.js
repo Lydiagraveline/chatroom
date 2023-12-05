@@ -100,6 +100,7 @@ async function getRoomMessages(room) {
 // Function to leave a room
 function leaveRoom(socket, room) {
   socket.leave(room);
+  io.of(room).emit('user left', socket.id); // Broadcast user leaving to all clients in the room
 }
 
 // Function to join a room
@@ -107,29 +108,31 @@ async function joinRoom(socket, room, user) {
   // console.log(socket.id);
   //join the room
   socket.join(room);
+  //socket.currentRoom = room; // Store the current room on the socket
 
   // Broadcast to all clients in the room except the newly joined user
   socket.broadcast.to(room).emit('new user joined', user);
 
     // Send an introduction and room prompt to the user
-  // const introduction = `Welcome to the ${room} room!`;
-  // const roomPrompt = 'What are your thoughts on this topic? Share your speculative ideas!';
-  // socket.emit('introduction', { introduction, roomPrompt });
+      const introduction = `Welcome to the ${room} room!`;
+      const roomPrompt = 'What are your thoughts on this topic? Share your speculative ideas!';
+      socket.emit('introduction', { introduction, roomPrompt });
 
 
   const history = await getRoomMessages(room);
   socket.emit('chat history', history);
 }//join room
 
-// Handle connections to different rooms
+// Handle connections to specific rooms
 io.on('connection', (socket) => {
   connectedClients.set(socket.id);
+  console.log('User connected');
   socket.emit('room names', formattedQuestions);
 
   socket.on('disconnect', () => {
     connectedClients.delete(socket.id);
-    console.log('User disconnected', connectedClients);
-
+    socket.emit('room left ');
+    console.log('User disconnected');
   }); 
   socket.on('client info', (userId) => {
     // console.log(`Received client info: ${userId}`);
