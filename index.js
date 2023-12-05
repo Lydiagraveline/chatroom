@@ -17,7 +17,7 @@ require('dotenv').config();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", process.env.ORIGIN],
+    origin: ["http://localhost:3000", "https://dolphin-chat.fly.dev", "*", process.env.ORIGIN],
   })
 );
 
@@ -70,12 +70,15 @@ const firstQuestions = [
 // Transform the array into an array of objects with index and question properties
 const formattedQuestions = firstQuestions.map((question, index) => ({ index, question }));
 
+// Create a Map to store client information
+const connectedClients = new Map();
+
 // Function to save messages to MongoDB using Mongoose
 async function saveMessage(room, userId, message) {
   try {
     const chatMessage = new ChatMessage({ room, userId, message });
     const result = await chatMessage.save();
-    console.log('Insertion successful:', result);
+    // console.log('Insertion successful:', result);
   } catch (error) {
     console.error('Error saving message to MongoDB:', error);
     throw error;
@@ -87,8 +90,6 @@ async function getRoomMessages(room) {
   try {
     // const messages = await ChatMessage.find({ room }).exec();
     const messages = await ChatMessage.find({ room }).sort({ timestamp: 1 }).exec();
-    //console.log('Retrieved Messages:', messages);
-    // console.log('Retrieved Messages:', messages);
     return messages;
   } catch (error) {
     console.error('Error retrieving messages from MongoDB:', error);
@@ -103,19 +104,42 @@ function leaveRoom(socket, room) {
 
 // Function to join a room
 async function joinRoom(socket, room) {
+  // console.log(socket.id);
+
+  //join the room
   socket.join(room);
+
+  // Emit to all clients in the room that a new user has joined
+  //io.to(room).emit('new user joined', socket.id);
+
   const history = await getRoomMessages(room);
   socket.emit('chat history', history);
-}
+}//join room
 
 // Handle connections to different rooms
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  connectedClients.set(socket.id);
+  // console.log(socket.id);
+  // socket.broadcast.emit("bang");
+  
+  //console.log('A user connected', socket.id);
     // Send room names to the client
   socket.emit('room names', formattedQuestions);
 
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    connectedClients.delete(socket.id);
+    console.log('User disconnected', connectedClients);
+
+  }); 
+
+  // socket.on('bang', () => {
+  //   let thisClient = connectedClients.get(socket.id);
+  //    socket.broadcast.emit('bang'); // send to all clients except the sender
+  // });
+
+  socket.on('client info', (userId) => {
+    // console.log(`Received client info: ${userId}`);
+    // Handle the client info as needed
   });
 
 
@@ -136,7 +160,7 @@ io.on('connection', (socket) => {
       socket.emit('chat history', history);
     }
   });
-});
+}); //on conenctions
 
 formattedQuestions.forEach(room => {
   const roomIndex = room.index;
@@ -148,8 +172,15 @@ function handleRoomConnection(roomName) {
   io.of(`${roomName}`).on('connection', (socket) => {
     const room = roomName;
     const username = socket.id;
-     joinRoom(socket, room, username);
+    joinRoom(socket, room, username);
+    io.of(room).emit('new user joined', socket.id);
+    //
 
+    socket.on('room joined', () => {
+      //console.log("user joined room ", room);
+    })
+
+    //handling incoming chat messages, saving them and then emiting them to the room
     socket.on('chat message', async (msg) => {
       await saveMessage(room, username, msg.message);
       io.of(room).emit('chat message', { userId: username, message: msg.message });

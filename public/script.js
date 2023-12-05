@@ -6,6 +6,7 @@ let socket = io();
   userId = Math.random().toString(36).substr(2, 10);
   localStorage.setItem('userId', userId);
   console.log(userId);
+  socket.emit("client info", userId);
   }
 
   function createRoomButtons(roomNames) {
@@ -18,17 +19,13 @@ let socket = io();
   }
 
   function joinRoom(selectedRoom, question) {
-    socket.disconnect();  // Disconnect from the previous room
+    // socket.disconnect();  // Disconnect from the previous room
     socket = io(`/${selectedRoom}`);
     // console.log(socket);
     $('#room-selection').hide();
     $('#chat-container').show();
-    // const roomTitle = question;
-    // console.log(question);
     const titleElement = document.getElementById('roomName');
     titleElement.innerText = `${question}`; // Update the room title header
-
-
 
     // Send the user ID to the server
     socket.emit('set userId', userId);
@@ -36,6 +33,7 @@ let socket = io();
     // Request chat history when joining a room
     socket.on('connect', function () {
       socket.emit('request history');
+      socket.emit('room joined');
   });
 
   // Handle chat history
@@ -66,11 +64,22 @@ let socket = io();
       $('#messages').append($('<li>').text(`${msg.userId}: ${msg.message}`));
     }
   });
+
+    // Handle the 'new user joined' event
+    socket.on('new user joined', function (newUser) {
+      console.log(`A new user joined the room: ${newUser}`);
+      // You can add logic here to display a message or perform any other action
+    });
+
+} // join room
+
+function sendSound(){
+
 }
 
   // Handle leaving a room
   function leaveRoom() {
-    socket.emit('leave room');
+    socket.emit('leave room', userId);
     $('#chat-container').hide();
     $('#room-selection').show();
   }
@@ -81,5 +90,6 @@ let socket = io();
     socket.on('room names', function (formattedQuestions) {
         createRoomButtons(formattedQuestions);
         generateRandomUserId();
+        // socket.emit("bang");
     });
   });
