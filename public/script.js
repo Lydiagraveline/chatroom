@@ -98,20 +98,57 @@ function playSound(){
     });
   });
 
-  // WELCOME SCREEN AND INITIALIZE AUDIO
+
+  // // // // // // // // // // // // // // 
+  // WELCOME SCREEN AND INITIALIZE AUDIO //
+  // // // // // // // // // // // // // // 
+  
   const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
+
+  // Preload each audio file and add it to the audioArray
+const whistleArray = [
+  preloadAudio("sounds/088_whistle.wav"),
+   preloadAudio("sounds/089_whistle.wav"),
+   preloadAudio("sounds/076_whistle.wav"),
+   preloadAudio("sounds/078_whistle.mp3"),
+   preloadAudio("sounds/097_whistle.wav"),
+   preloadAudio("sounds/096_whistle.wav"),
+];
+
+  // Function to preload audio
+function preloadAudio(url) {
+  const audio = new Audio();
+  audio.src = url;
+  audio.preload = "auto";
+  
+  // Optionally, you can attach an event listener to handle the 'loadeddata' event
+  // audio.addEventListener('loadeddata', () => {
+  //     console.log(`Audio ${url} preloaded successfully`);
+  // });
+  
+  return audio;
+}
   
   function playAudio() {
     console.log("Audio initialized");
-    // Your audio initialization and playback code goes here
+
+    const audioIndex = Math.floor(Math.random() * whistleArray.length);
+    const selectedAudio = whistleArray[audioIndex];
+      // Check if the audio is already playing, if yes, pause and reset
+  if (!selectedAudio.paused) {
+    selectedAudio.pause();
+    selectedAudio.currentTime = 0;
+  }
+
+  console.log("playing", selectedAudio);
+  // Play the selected audio
+  selectedAudio.play();
   }
 
   function showRoomSelection() {
     $('#welcomeContainer').hide();
     $('#room-selection').show();
     //document.getElementById("welcomeContainer").style.display = "none";
-    // console.log("Audio initialized");
-    // Your audio initialization and playback code goes here
   }
   
   preloadAudioBtn.addEventListener('touchstart', (event) => {
