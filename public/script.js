@@ -12,16 +12,22 @@ let socket = io();
     const container = $('#room-selection');
     roomNames.forEach((room) => {
      const { index, question } = room;
-      const button = `<button class="roomBtn" onclick="joinRoom('${index}')">${question}</button>`;
+      const button = `<button class="roomBtn" onclick="joinRoom('${index}','${question}')">${question}</button>`;
       container.append(button);
     });
   }
 
-  function joinRoom(selectedRoom) {
+  function joinRoom(selectedRoom, question) {
     socket = io(`/${selectedRoom}`);
-    console.log(socket);
+    // console.log(socket);
     $('#room-selection').hide();
     $('#chat-container').show();
+    // const roomTitle = question;
+    console.log(question);
+    const titleElement = document.getElementById('roomName');
+    titleElement.innerText = `${question}`; // Update the room title header
+
+
 
     // Send the user ID to the server
     socket.emit('set userId', userId);

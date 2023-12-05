@@ -26,6 +26,10 @@ const chatMessageSchema = new mongoose.Schema({
   room: String,
   userId: String,
   message: String,
+  timestamp: {
+    type: Date,
+    default: Date.now
+}
 });
 
 // Create a Mongoose model using the schema
@@ -74,8 +78,10 @@ async function saveMessage(room, userId, message) {
 // Function to retrieve messages from MongoDB for a room using Mongoose
 async function getRoomMessages(room) {
   try {
-    const messages = await ChatMessage.find({ room }).exec();
+    // const messages = await ChatMessage.find({ room }).exec();
+    const messages = await ChatMessage.find({ room }).sort({ timestamp: 1 }).exec();
     console.log('Retrieved Messages:', messages);
+    // console.log('Retrieved Messages:', messages);
     return messages;
   } catch (error) {
     console.error('Error retrieving messages from MongoDB:', error);
@@ -125,29 +131,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Handle chat messages in specific rooms
-io.of('/room1').on('connection', (socket) => {
-  const room = '/room1';
-  const username = socket.id;
-  joinRoom(socket, room, username);
-
-  socket.on('chat message', async (msg) => {
-    await saveMessage(room, username, msg.message); // Extract the message from the object
-    io.of(room).emit('chat message', { userId: username, message: msg.message });
-  });
-});
-
-io.of('/room2').on('connection', (socket) => {
-  const room = '/room2';
-  const username = socket.id;
-  joinRoom(socket, room, username);
-
-  socket.on('chat message', async (msg) => {
-    await saveMessage(room, username, msg.message); // Extract the message from the object
-    io.of(room).emit('chat message', { userId: username, message: msg.message });
-  });
-});
-
 formattedQuestions.forEach(room => {
   const roomIndex = room.index;
    handleRoomConnection(roomIndex);
@@ -156,7 +139,6 @@ formattedQuestions.forEach(room => {
 // Function to handle connections to a specific room
 function handleRoomConnection(roomName) {
   io.of(`${roomName}`).on('connection', (socket) => {
-    console.log(roomName);
     const room = roomName;
     const username = socket.id;
      joinRoom(socket, room, username);
