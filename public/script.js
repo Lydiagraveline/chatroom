@@ -79,6 +79,8 @@ console.log("play sound!");
 
   // Handle leaving a room
   function leaveRoom() {
+    console.log("left room");
+    socket.disconnect();
     socket.emit('leave room', userId);
     $('#chat-container').hide();
     $('#room-selection').show();
