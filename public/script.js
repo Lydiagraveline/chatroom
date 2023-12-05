@@ -18,12 +18,13 @@ let socket = io();
   }
 
   function joinRoom(selectedRoom, question) {
+    socket.disconnect();  // Disconnect from the previous room
     socket = io(`/${selectedRoom}`);
     // console.log(socket);
     $('#room-selection').hide();
     $('#chat-container').show();
     // const roomTitle = question;
-    console.log(question);
+    // console.log(question);
     const titleElement = document.getElementById('roomName');
     titleElement.innerText = `${question}`; // Update the room title header
 

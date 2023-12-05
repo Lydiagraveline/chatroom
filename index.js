@@ -7,12 +7,19 @@ const mongoose = require('mongoose');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
+const cors = require('cors');
 
 // Serve static files from the 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
 require('dotenv').config();
-const mongoURI = process.env.MONGO_URI;
+// const mongoURI = process.env.MONGO_URI;
+
+app.use(
+  cors({
+    origin: ["http://localhost:3000", process.env.ORIGIN],
+  })
+);
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -80,7 +87,7 @@ async function getRoomMessages(room) {
   try {
     // const messages = await ChatMessage.find({ room }).exec();
     const messages = await ChatMessage.find({ room }).sort({ timestamp: 1 }).exec();
-    console.log('Retrieved Messages:', messages);
+    //console.log('Retrieved Messages:', messages);
     // console.log('Retrieved Messages:', messages);
     return messages;
   } catch (error) {
