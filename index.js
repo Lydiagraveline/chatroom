@@ -103,11 +103,14 @@ function leaveRoom(socket, room) {
 }
 
 // Function to join a room
-async function joinRoom(socket, room) {
+async function joinRoom(socket, room, user) {
   // console.log(socket.id);
 
   //join the room
   socket.join(room);
+
+  // Broadcast to all clients in the room except the newly joined user
+  socket.broadcast.to(room).emit('new user joined', user);
 
   // Emit to all clients in the room that a new user has joined
   //io.to(room).emit('new user joined', socket.id);
@@ -173,7 +176,10 @@ function handleRoomConnection(roomName) {
     const room = roomName;
     const username = socket.id;
     joinRoom(socket, room, username);
-    io.of(room).emit('new user joined', socket.id);
+
+    // emit user joined
+   // io.of(room).broadcast('new user joined', socket.id);
+    //socket.broadcast.emit('bang'); // send to all clients except the sender
     //
 
     socket.on('room joined', () => {

@@ -68,13 +68,13 @@ let socket = io();
     // Handle the 'new user joined' event
     socket.on('new user joined', function (newUser) {
       console.log(`A new user joined the room: ${newUser}`);
-      // You can add logic here to display a message or perform any other action
+      playSound()
     });
 
 } // join room
 
-function sendSound(){
-
+function playSound(){
+console.log("play sound!");
 }
 
   // Handle leaving a room
