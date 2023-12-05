@@ -97,3 +97,30 @@ function playSound(){
         // socket.emit("bang");
     });
   });
+
+  // WELCOME SCREEN AND INITIALIZE AUDIO
+  const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
+  
+  function playAudio() {
+    console.log("Audio initialized");
+    // Your audio initialization and playback code goes here
+  }
+
+  function showRoomSelection() {
+    $('#welcomeContainer').hide();
+    $('#room-selection').show();
+    //document.getElementById("welcomeContainer").style.display = "none";
+    // console.log("Audio initialized");
+    // Your audio initialization and playback code goes here
+  }
+  
+  preloadAudioBtn.addEventListener('touchstart', (event) => {
+    event.preventDefault(); // Prevents the default touch behavior, as we're handling it manually
+    showRoomSelection();
+    playAudio();
+  });
+  
+  preloadAudioBtn.addEventListener('click', () => {
+    showRoomSelection();
+    playAudio();
+  });
