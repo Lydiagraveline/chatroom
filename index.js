@@ -125,18 +125,52 @@ async function joinRoom(socket, room, user) {
 
 // Handle connections to specific rooms
 io.on('connection', (socket) => {
-  connectedClients.set(socket.id);
+  // connectedClients.set(socket.id);
   console.log('User connected');
   socket.emit('room names', formattedQuestions);
 
   socket.on('disconnect', () => {
     connectedClients.delete(socket.id);
-    socket.emit('room left ');
+    socket.emit('room left');
     console.log('User disconnected');
   }); 
-  socket.on('client info', (userId) => {
-    // console.log(`Received client info: ${userId}`);
-    // Handle the client info as needed
+
+  // Handle the client info including the whistleArray
+  socket.on('client info', ({ userId, whistleArray }) => {
+   // console.log(`Received client info: userId=${userId}, whistleArray=${whistleArray}`);
+    // connectedClients.set(socket.id, { userId });
+    connectedClients.set(socket.id, { userId, whistleArray });
+    // console.log(connectedClients)
+    // Define the array of audio indices (corresponding to whistleArray)
+    const audioIndices = [...Array(whistleArray.length).keys()];
+    // console.log(audioIndices);
+  });
+
+  // Handle the request for a randomized audio sequence
+  socket.on('request audio sequence', () => {
+  // Get the client information, including whistleArray
+  const clientInfo = connectedClients.get(socket.id);
+
+  if (clientInfo && clientInfo.whistleArray) {
+    const { whistleArray } = clientInfo;
+    console.log("Generating randomized audio sequence...");
+
+    // Define the array of audio indices (corresponding to whistleArray)
+    const audioIndices = [...Array(whistleArray.length).keys()];
+
+    // Shuffle the array of audio indices to get a randomized sequence
+    const shuffledIndices = audioIndices.sort(() => Math.random() - 0.5);
+    console.log(shuffledIndices)
+    
+    // Take the first 3 indices from the shuffled sequence
+    const selectedIndices = shuffledIndices.slice(0, 3);
+    console.log(selectedIndices);
+
+    // Send the selected audio indices back to the client
+    socket.emit('audio sequence', selectedIndices);
+  } else {
+    console.error("Client information or whistleArray not available.");
+  }
   });
 
   // Handle leaving a room

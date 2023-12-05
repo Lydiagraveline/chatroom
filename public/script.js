@@ -2,11 +2,23 @@ let userId;
 // Initialize the socket object
 let socket = io();
 
+  // Preload each audio file and add it to the audioArray
+  const whistleArray = [
+    preloadAudio("sounds/088_whistle.wav"),
+     preloadAudio("sounds/089_whistle.wav"),
+     preloadAudio("sounds/076_whistle.wav"),
+     preloadAudio("sounds/078_whistle.mp3"),
+     preloadAudio("sounds/097_whistle.wav"),
+     preloadAudio("sounds/096_whistle.wav"),
+  ];
+  
+
   function generateRandomUserId() {
   userId = Math.random().toString(36).substr(2, 10);
   localStorage.setItem('userId', userId);
   console.log(userId);
-  socket.emit("client info", userId);
+  // console.log(whistleArray);
+   socket.emit("client info", { userId, whistleArray });
   }
 
   function createRoomButtons(roomNames) {
@@ -102,18 +114,14 @@ function playSound(){
   // // // // // // // // // // // // // // 
   // WELCOME SCREEN AND INITIALIZE AUDIO //
   // // // // // // // // // // // // // // 
+  function showRoomSelection() {
+    $('#welcomeContainer').hide();
+    $('#room-selection').show();
+    //document.getElementById("welcomeContainer").style.display = "none";
+  }
+  
   
   const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
-
-  // Preload each audio file and add it to the audioArray
-const whistleArray = [
-  preloadAudio("sounds/088_whistle.wav"),
-   preloadAudio("sounds/089_whistle.wav"),
-   preloadAudio("sounds/076_whistle.wav"),
-   preloadAudio("sounds/078_whistle.mp3"),
-   preloadAudio("sounds/097_whistle.wav"),
-   preloadAudio("sounds/096_whistle.wav"),
-];
 
   // Function to preload audio
 function preloadAudio(url) {
@@ -129,35 +137,46 @@ function preloadAudio(url) {
   return audio;
 }
   
-  function playAudio() {
-    console.log("Audio initialized");
+// request whistle siganture
+function playAudio() {
+  console.log("Requesting randomized audio sequence from the server...");
+  
+  // Send a request to the server to get a randomized audio sequence
+  socket.emit('request audio sequence');
 
-    const audioIndex = Math.floor(Math.random() * whistleArray.length);
-    const selectedAudio = whistleArray[audioIndex];
-      // Check if the audio is already playing, if yes, pause and reset
+  socket.on('audio sequence', function (sequence) {
+    console.log("Received randomized audio sequence:", sequence);
+    // show the room selection menu
+    showRoomSelection();
+
+    // Play the audio files in the randomized sequence
+    sequence.forEach((audioIndex, index) => {
+      setTimeout(() => {
+        playSingleAudio(audioIndex);
+      }, index * 150); // Adjust the delay between audio files as needed
+    });
+  });
+}
+
+function playSingleAudio(audioIndex) {
+  const selectedAudio = whistleArray[audioIndex];
+
+  // Check if the audio is already playing, if yes, pause and reset
   if (!selectedAudio.paused) {
     selectedAudio.pause();
     selectedAudio.currentTime = 0;
   }
 
-  console.log("playing", selectedAudio);
+  console.log("Playing audio at index", audioIndex);
   // Play the selected audio
   selectedAudio.play();
-  }
+}
 
-  function showRoomSelection() {
-    $('#welcomeContainer').hide();
-    $('#room-selection').show();
-    //document.getElementById("welcomeContainer").style.display = "none";
-  }
-  
   preloadAudioBtn.addEventListener('touchstart', (event) => {
     event.preventDefault(); // Prevents the default touch behavior, as we're handling it manually
-    showRoomSelection();
     playAudio();
   });
   
   preloadAudioBtn.addEventListener('click', () => {
-    showRoomSelection();
     playAudio();
   });
