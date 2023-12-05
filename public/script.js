@@ -1,6 +1,6 @@
-
-   let socket;
-  let userId;
+let userId;
+// Initialize the socket object
+let socket = io();
 
   function generateRandomUserId() {
   userId = Math.random().toString(36).substr(2, 10);
@@ -8,9 +8,18 @@
   console.log(userId);
   }
 
-function joinRoom(room) {
-    console.log("join room");
-    socket = io(`/${room}`);
+  function createRoomButtons(roomNames) {
+    const container = $('#room-selection');
+    roomNames.forEach((room) => {
+     const { index, question } = room;
+      const button = `<button class="roomBtn" onclick="joinRoom('${index}')">${question}</button>`;
+      container.append(button);
+    });
+  }
+
+  function joinRoom(selectedRoom) {
+    socket = io(`/${selectedRoom}`);
+    console.log(socket);
     $('#room-selection').hide();
     $('#chat-container').show();
 
@@ -58,3 +67,12 @@ function joinRoom(room) {
     $('#chat-container').hide();
     $('#room-selection').show();
   }
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    socket.emit('request room names');
+    socket.on('room names', function (formattedQuestions) {
+        createRoomButtons(formattedQuestions);
+        generateRandomUserId();
+    });
+  });
