@@ -13,6 +13,7 @@ let socket = io();
   ];
   
 
+  // id is not random, its the socket.id generated when the user connects to the server (which is different then the socket.id generated each time the user enters a new room)
   function generateRandomUserId() {
     
   // userId = Math.random().toString(36).substr(2, 10);
@@ -22,10 +23,6 @@ let socket = io();
     userId = globalSocketId; 
     }
   )
-    
-  
-
-
   console.log(userId);
   // console.log(whistleArray);
   
@@ -153,44 +150,53 @@ let socket = io();
     //document.getElementById("welcomeContainer").style.display = "none";
   }
   
-  
-  const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
 
-  // Function to preload audio
 function preloadAudio(url) {
   const audio = new Audio();
   audio.src = url;
   audio.preload = "auto";
-  
-  // Optionally, you can attach an event listener to handle the 'loadeddata' event
-  // audio.addEventListener('loadeddata', () => {
-  //     console.log(`Audio ${url} preloaded successfully`);
-  // });
-  
+  // Add event listener to handle loadeddata event
+  audio.addEventListener('loadeddata', () => {
+    // console.log(`Audio ${url} preloaded successfully`);
+  });
   return audio;
 }
+
+// Function to create an audio buffer
+async function createAudioBuffer(url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  return await audioContext.decodeAudioData(arrayBuffer);
+}
+
+// Create an audio context
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
   
 // request whistle siganture
-function playAudio() {
+async function initAudio() {
   console.log("Requesting randomized audio sequence from the server...");
-  
-  // Send a request to the server to get a randomized audio sequence
-  socket.emit('request audio signature');
+  socket.emit('request audio signature'); // Send a request to the server to get a randomized audio sequence
 
-  socket.on('assign audio signature', function (sequence) {
+  socket.on('assign audio signature', async function (sequence) {
     console.log("Received randomized audio sequence:", sequence);
     // show the room selection menu
     showRoomSelection();
+     // Create an array of audio buffers
+     const audioBuffers = await Promise.all(sequence.map(index => createAudioBuffer(whistleArray[index].src)));
 
-    // Play the audio files in the randomized sequence
-    // sequence.forEach((audioIndex, index) => {
-    //   setTimeout(() => {
-    //     playSingleAudio(audioIndex);
-    //   }, index * 150); // Adjust the delay between audio files as needed
-    // });
-
-    playSequence(sequence);
+     // Play the audio files in the randomized sequence
+     audioBuffers.forEach((buffer, index) => {
+       const source = audioContext.createBufferSource();
+       source.buffer = buffer;
+       source.connect(audioContext.destination);
+       source.start(audioContext.currentTime + index * 0.15); // Adjust the delay between audio files as needed
+     });
   });
+}
+
+// Add a check for iOS devices
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
 function playSingleAudio(audioIndex) {
@@ -207,11 +213,31 @@ function playSingleAudio(audioIndex) {
   selectedAudio.play();
 }
 
-  preloadAudioBtn.addEventListener('touchstart', (event) => {
-    event.preventDefault(); // Prevents the default touch behavior, as we're handling it manually
-    playAudio();
-  });
-  
-  preloadAudioBtn.addEventListener('click', () => {
-    playAudio();
-  });
+const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
+
+preloadAudioBtn.addEventListener('touchstart', async (event) => {
+  event.preventDefault();
+  // Wrap the code in a try-catch block to handle the Promise rejection
+  try {
+    // Play audio only if the user is on an iOS device
+    if (isIOS()) {
+      await initAudio();
+    }
+  } catch (error) {
+    console.error('Error playing audio:', error);
+    // Handle the error, e.g., show a message to the user
+  }
+});
+
+preloadAudioBtn.addEventListener('click', async () => {
+  // Wrap the code in a try-catch block to handle the Promise rejection
+  try {
+    // Play audio if the user is not on an iOS device
+    if (!isIOS()) {
+      await initAudio();
+    }
+  } catch (error) {
+    console.error('Error playing audio:', error);
+    // Handle the error, e.g., show a message to the user
+  }
+});
