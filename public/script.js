@@ -14,11 +14,21 @@ let socket = io();
   
 
   function generateRandomUserId() {
-  userId = Math.random().toString(36).substr(2, 10);
-  localStorage.setItem('userId', userId);
+    
+  // userId = Math.random().toString(36).substr(2, 10);
+  // localStorage.setItem('userId', userId);
+  socket.on("assign id", function(globalSocketId ) {
+    console.log("assigned id");
+    userId = globalSocketId; 
+    }
+  )
+    
+  
+
+
   console.log(userId);
   // console.log(whistleArray);
-   socket.emit("client info", { userId, whistleArray });
+  
   }
 
   function createRoomButtons(roomNames) {
@@ -29,6 +39,17 @@ let socket = io();
       container.append(button);
     });
   }
+
+  function playSequence(sequence){
+    console.log("playing ", sequence);
+        // Play the audio files in the randomized sequence
+        sequence.forEach((audioIndex, index) => {
+          setTimeout(() => {
+            playSingleAudio(audioIndex);
+          }, index * 150); // Adjust the delay between audio files as needed
+        });
+  }
+
 
   function joinRoom(selectedRoom, question) {
     // socket.disconnect();  // Disconnect from the previous room
@@ -45,7 +66,7 @@ let socket = io();
     // Request chat history when joining a room
     socket.on('connect', function () {
       socket.emit('request history');
-      socket.emit('room joined');
+      socket.emit('room joined', userId);
   });
 
   // Handle chat history
@@ -63,14 +84,14 @@ let socket = io();
    $('form').submit(function () {
     const message = $('#m').val();
     if (message.trim() !== '') {
-      socket.emit('chat message', { userId, message });
+      socket.emit('sent message', { userId, message });
       $('#m').val('');
     }
     return false;
   });
 
   // Handle receiving and displaying new messages
-  socket.on('chat message', function (msg) {
+  socket.on('emit message', function (msg) {
     // Assuming msg is an object with properties userId and message
     if (msg && msg.userId !== undefined && msg.message !== undefined) {
       $('#messages').append($('<li>').text(`${msg.userId}: ${msg.message}`));
@@ -80,14 +101,17 @@ let socket = io();
     // Handle the 'new user joined' event
     socket.on('new user joined', function (newUser) {
       console.log(`A new user joined the room: ${newUser}`);
-      playSound()
+      
+    });
+
+    socket.on('play sequence', function (sequence) {
+     
+      playSequence(sequence);
     });
 
 } // join room
 
-function playSound(){
-// console.log("play sound!");
-}
+
 
   // Handle leaving a room
   function leaveRoom() {
@@ -105,9 +129,18 @@ function playSound(){
     socket.emit('request room names');
     socket.on('room names', function (formattedQuestions) {
         createRoomButtons(formattedQuestions);
-        generateRandomUserId();
+        // generateRandomUserId();
         // socket.emit("bang");
     });
+
+    socket.on("assign id", function(globalSocketId ) {
+      console.log("assigned id");
+      userId = globalSocketId; 
+      console.log(userId);
+
+      socket.emit("client info", { userId, whistleArray });
+      })
+    
   });
 
 
@@ -142,19 +175,21 @@ function playAudio() {
   console.log("Requesting randomized audio sequence from the server...");
   
   // Send a request to the server to get a randomized audio sequence
-  socket.emit('request audio sequence');
+  socket.emit('request audio signature');
 
-  socket.on('audio sequence', function (sequence) {
+  socket.on('assign audio signature', function (sequence) {
     console.log("Received randomized audio sequence:", sequence);
     // show the room selection menu
     showRoomSelection();
 
     // Play the audio files in the randomized sequence
-    sequence.forEach((audioIndex, index) => {
-      setTimeout(() => {
-        playSingleAudio(audioIndex);
-      }, index * 150); // Adjust the delay between audio files as needed
-    });
+    // sequence.forEach((audioIndex, index) => {
+    //   setTimeout(() => {
+    //     playSingleAudio(audioIndex);
+    //   }, index * 150); // Adjust the delay between audio files as needed
+    // });
+
+    playSequence(sequence);
   });
 }
 
@@ -167,7 +202,7 @@ function playSingleAudio(audioIndex) {
     selectedAudio.currentTime = 0;
   }
 
-  console.log("Playing audio at index", audioIndex);
+  // console.log("Playing audio at index", audioIndex);
   // Play the selected audio
   selectedAudio.play();
 }

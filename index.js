@@ -97,6 +97,17 @@ async function getRoomMessages(room) {
   }
 }
 
+function getSocketIdByUserId(userId) {
+  for (const [socketId, clientInfo] of connectedClients.entries()) {
+    if (clientInfo.userId === userId) {
+      return socketId; // Return the socket.id if the userId matches
+    }
+  }
+  return null; // Return null if the userId is not found
+}
+
+
+
 // Function to leave a room
 function leaveRoom(socket, room) {
   socket.leave(room);
@@ -105,28 +116,33 @@ function leaveRoom(socket, room) {
 
 // Function to join a room
 async function joinRoom(socket, room, user) {
-  // console.log(socket.id);
   //join the room
   socket.join(room);
-  //socket.currentRoom = room; // Store the current room on the socket
-
+  console.log(user + " joined room " +  room);
   // Broadcast to all clients in the room except the newly joined user
   socket.broadcast.to(room).emit('new user joined', user);
 
-    // Send an introduction and room prompt to the user
-      const introduction = `Welcome to the ${room} room!`;
-      const roomPrompt = 'What are your thoughts on this topic? Share your speculative ideas!';
-      socket.emit('introduction', { introduction, roomPrompt });
+// Get user info from connectedClients Map using socket.id
+let userInfo = connectedClients.get(user);
 
-
+if (userInfo && userInfo.randomizedSequence) {
+  const whistleSignature = userInfo.randomizedSequence; 
+  console.log("sequence", whistleSignature);
+  socket.to(room).emit('play sequence', whistleSignature);
+} else {
+  console.error("userInfo or randomizedSequence not available.");
+}
   const history = await getRoomMessages(room);
   socket.emit('chat history', history);
 }//join room
 
-// Handle connections to specific rooms
+// Handle connections to the server
 io.on('connection', (socket) => {
   // connectedClients.set(socket.id);
+  //const globalSocketId = socket.id;
+  socket.emit('assign id', socket.id);
   console.log('User connected');
+  
   socket.emit('room names', formattedQuestions);
 
   socket.on('disconnect', () => {
@@ -137,37 +153,37 @@ io.on('connection', (socket) => {
 
   // Handle the client info including the whistleArray
   socket.on('client info', ({ userId, whistleArray }) => {
-   // console.log(`Received client info: userId=${userId}, whistleArray=${whistleArray}`);
-    // connectedClients.set(socket.id, { userId });
     connectedClients.set(socket.id, { userId, whistleArray });
-    // console.log(connectedClients)
-    // Define the array of audio indices (corresponding to whistleArray)
-    const audioIndices = [...Array(whistleArray.length).keys()];
-    // console.log(audioIndices);
+    //console.log(connectedClients);
+   // console.log(connectedClients)
   });
 
   // Handle the request for a randomized audio sequence
-  socket.on('request audio sequence', () => {
+  socket.on('request audio signature', () => {
   // Get the client information, including whistleArray
   const clientInfo = connectedClients.get(socket.id);
 
   if (clientInfo && clientInfo.whistleArray) {
     const { whistleArray } = clientInfo;
-    console.log("Generating randomized audio sequence...");
+    // console.log("Generating randomized audio sequence...");
 
     // Define the array of audio indices (corresponding to whistleArray)
     const audioIndices = [...Array(whistleArray.length).keys()];
 
     // Shuffle the array of audio indices to get a randomized sequence
     const shuffledIndices = audioIndices.sort(() => Math.random() - 0.5);
-    console.log(shuffledIndices)
-    
+    // console.log(shuffledIndices)
+
     // Take the first 3 indices from the shuffled sequence
     const selectedIndices = shuffledIndices.slice(0, 3);
-    console.log(selectedIndices);
+    // console.log(selectedIndices);
+
+    // Save the randomized audio sequence in the connectedClients array
+    connectedClients.set(socket.id, { ...clientInfo, randomizedSequence: selectedIndices });
+    //  console.log(connectedClients)
 
     // Send the selected audio indices back to the client
-    socket.emit('audio sequence', selectedIndices);
+    socket.emit('assign audio signature', selectedIndices);
   } else {
     console.error("Client information or whistleArray not available.");
   }
@@ -201,22 +217,26 @@ formattedQuestions.forEach(room => {
 function handleRoomConnection(roomName) {
   io.of(`${roomName}`).on('connection', (socket) => {
     const room = roomName;
-    const username = socket.id;
-    joinRoom(socket, room, username);
+    const roomSpecificSocketId = `${socket.id}_${room}`;
+    //console.log(socket.id);
+    
+   
 
     // emit user joined
    // io.of(room).broadcast('new user joined', socket.id);
     //socket.broadcast.emit('bang'); // send to all clients except the sender
     //
-
-    socket.on('room joined', () => {
-      //console.log("user joined room ", room);
+    socket.on('room joined', (userId) => {
+      joinRoom(socket, room, userId);
+      // console.log("user joined room ", room);
+      //console.log(userId);
+      //console.log(connectedClients);
     })
 
     //handling incoming chat messages, saving them and then emiting them to the room
-    socket.on('chat message', async (msg) => {
-      await saveMessage(room, username, msg.message);
-      io.of(room).emit('chat message', { userId: username, message: msg.message });
+    socket.on('sent message', async ( msg) => {
+      await saveMessage(room, msg.userId, msg.message);
+      io.of(room).emit('emit message', { userId: msg.userId, message: msg.message });
     });
   });
 }
