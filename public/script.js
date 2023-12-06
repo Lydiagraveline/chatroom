@@ -43,15 +43,7 @@ let socket = io();
     });
   }
 
-  function playSequence(sequence){
-    console.log("playing ", sequence);
-        // Play the audio files in the randomized sequence
-        sequence.forEach((audioIndex, index) => {
-          setTimeout(() => {
-            playSingleAudio(audioIndex);
-          }, index * 150); // Adjust the delay between audio files as needed
-        });
-  }
+
 
 
   function joinRoom(selectedRoom, question) {
@@ -217,6 +209,16 @@ function initAudio(){
 });
 }
 
+  function playSequence(sequence){
+    console.log("playing ", sequence);
+        // Play the audio files in the randomized sequence
+        sequence.forEach((audioIndex, index) => {
+          setTimeout(() => {
+            playSingleAudio(audioIndex);
+          }, index * 150); // Adjust the delay between audio files as needed
+        });
+  }
+
 // Add a check for iOS devices
 // function isIOS() {
 //   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -240,7 +242,7 @@ const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
 
 preloadAudioBtn.addEventListener('touchstart', (event) => {
   event.preventDefault();
-  initAudio();
+  // initAudio();
   // Wrap the code in a try-catch block to handle the Promise rejection
   // try {
   //   // Play audio only if the user is on an iOS device
@@ -254,7 +256,7 @@ preloadAudioBtn.addEventListener('touchstart', (event) => {
 });
 
 preloadAudioBtn.addEventListener('click', () => {
-  initAudio();
+  // initAudio();
   // Wrap the code in a try-catch block to handle the Promise rejection
   // try {
   //   // Play audio if the user is not on an iOS device
@@ -267,17 +269,26 @@ preloadAudioBtn.addEventListener('click', () => {
   // }
 });
 
-function unlockAudio() {
-  console.log("dummy audio");
-  // Create a dummy audio element and play it to unlock audio on Safari
-  const dummyAudio = new Audio('sounds/cat-purr-meow.mp3');
-  dummyAudio.play();
-  //dummyAudio.pause();
-  //dummyAudio.currentTime = 0;
+async function unlockAudio() {
+  try {
+    console.log("dummy audio");
+    // Create a dummy audio element and play it to unlock audio on Safari
+    const dummyAudio = new Audio('sounds/dummy.mp3');
+    dummyAudio.play();
+    // dummyAudio.pause();
+    //dummyAudio.currentTime = 0;
+  
+    // Remove the event listeners to avoid unnecessary calls
+     document.body.removeEventListener('click', unlockAudio);
+     document.body.removeEventListener('touchstart', unlockAudio);
 
-  // Remove the event listeners to avoid unnecessary calls
-   document.body.removeEventListener('click', unlockAudio);
-   document.body.removeEventListener('touchstart', unlockAudio);
+     initAudio();
+  } catch {
+    
+  }
+
+
+  //  initAudio();
 }
 
 // Add event listeners to unlock audio on user interaction
