@@ -4,12 +4,18 @@ let socket = io();
 
   // Preload each audio file and add it to the audioArray
   const whistleArray = [
+    preloadAudio("sounds/014_whistle.mp3"),
+    preloadAudio("sounds/069_whistle.wav"),
+    preloadAudio("sounds/070_whistle.wav"),
+    // preloadAudio("sounds/075_whistle.wav"),
+    preloadAudio("sounds/076_whistle.wav"),
+    preloadAudio("sounds/078_whistle.mp3"),
     preloadAudio("sounds/088_whistle.wav"),
-     preloadAudio("sounds/089_whistle.wav"),
-     preloadAudio("sounds/076_whistle.wav"),
-     preloadAudio("sounds/078_whistle.mp3"),
-     preloadAudio("sounds/097_whistle.wav"),
-     preloadAudio("sounds/096_whistle.wav"),
+    preloadAudio("sounds/089_whistle.wav"),
+    preloadAudio("sounds/097_whistle.wav"),
+    preloadAudio("sounds/096_whistle.wav"),
+    preloadAudio("sounds/100_whistle.wav"),
+    preloadAudio("sounds/107_whistle.mp3")
   ];
   
 
@@ -164,6 +170,7 @@ function preloadAudio(url) {
 
 // Function to create an audio buffer
 async function createAudioBuffer(url) {
+  console.log("create audio buffer");
   const response = await fetch(url);
   const arrayBuffer = await response.arrayBuffer();
   return await audioContext.decodeAudioData(arrayBuffer);
@@ -173,31 +180,47 @@ async function createAudioBuffer(url) {
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
   
 // request whistle siganture
-async function initAudio() {
+// async function initAudio() {
+//   try {
+//   console.log("Requesting randomized audio sequence from the server...");
+//   socket.emit('request audio signature'); // Send a request to the server to get a randomized audio sequence
+
+//   socket.on('assign audio signature', async function (sequence) {
+//     console.log("Received randomized audio sequence:", sequence);
+//     // show the room selection menu
+//     showRoomSelection();
+//      // Create an array of audio buffers
+//      const audioBuffers = await Promise.all(sequence.map(index => createAudioBuffer(whistleArray[index].src)));
+
+//      // Play the audio files in the randomized sequence
+//      audioBuffers.forEach((buffer, index) => {
+//        const source = audioContext.createBufferSource();
+//        source.buffer = buffer;
+//        source.connect(audioContext.destination);
+//        source.start(audioContext.currentTime + index * 0.15); // Adjust the delay between audio files as needed
+//      });
+//   });
+// }catch (error) {
+//     console.error('Error in playAudio:', error);
+//   }
+// }
+
+function initAudio(){
   console.log("Requesting randomized audio sequence from the server...");
   socket.emit('request audio signature'); // Send a request to the server to get a randomized audio sequence
-
+  
   socket.on('assign audio signature', async function (sequence) {
-    console.log("Received randomized audio sequence:", sequence);
-    // show the room selection menu
-    showRoomSelection();
-     // Create an array of audio buffers
-     const audioBuffers = await Promise.all(sequence.map(index => createAudioBuffer(whistleArray[index].src)));
-
-     // Play the audio files in the randomized sequence
-     audioBuffers.forEach((buffer, index) => {
-       const source = audioContext.createBufferSource();
-       source.buffer = buffer;
-       source.connect(audioContext.destination);
-       source.start(audioContext.currentTime + index * 0.15); // Adjust the delay between audio files as needed
-     });
-  });
+        console.log("Received randomized audio sequence:", sequence);
+        // show the room selection menu
+        showRoomSelection();
+        playSequence(sequence);
+});
 }
 
 // Add a check for iOS devices
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
+// function isIOS() {
+//   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+// }
 
 function playSingleAudio(audioIndex) {
   const selectedAudio = whistleArray[audioIndex];
@@ -215,29 +238,48 @@ function playSingleAudio(audioIndex) {
 
 const preloadAudioBtn = document.querySelector("#preloadAudioBtn");
 
-preloadAudioBtn.addEventListener('touchstart', async (event) => {
+preloadAudioBtn.addEventListener('touchstart', (event) => {
   event.preventDefault();
+  initAudio();
   // Wrap the code in a try-catch block to handle the Promise rejection
-  try {
-    // Play audio only if the user is on an iOS device
-    if (isIOS()) {
-      await initAudio();
-    }
-  } catch (error) {
-    console.error('Error playing audio:', error);
-    // Handle the error, e.g., show a message to the user
-  }
+  // try {
+  //   // Play audio only if the user is on an iOS device
+  //   if (isIOS()) {
+  //     await initAudio();
+  //   }
+  // } catch (error) {
+  //   console.error('Error playing audio:', error);
+  //   // Handle the error, e.g., show a message to the user
+  // }
 });
 
-preloadAudioBtn.addEventListener('click', async () => {
+preloadAudioBtn.addEventListener('click', () => {
+  initAudio();
   // Wrap the code in a try-catch block to handle the Promise rejection
-  try {
-    // Play audio if the user is not on an iOS device
-    if (!isIOS()) {
-      await initAudio();
-    }
-  } catch (error) {
-    console.error('Error playing audio:', error);
-    // Handle the error, e.g., show a message to the user
-  }
+  // try {
+  //   // Play audio if the user is not on an iOS device
+  //   if (!isIOS()) {
+  //     await initAudio();
+  //   }
+  // } catch (error) {
+  //   console.error('Error playing audio:', error);
+  //   // Handle the error, e.g., show a message to the user
+  // }
 });
+
+function unlockAudio() {
+  console.log("dummy audio");
+  // Create a dummy audio element and play it to unlock audio on Safari
+  const dummyAudio = new Audio('sounds/cat-purr-meow.mp3');
+  dummyAudio.play();
+  //dummyAudio.pause();
+  //dummyAudio.currentTime = 0;
+
+  // Remove the event listeners to avoid unnecessary calls
+   document.body.removeEventListener('click', unlockAudio);
+   document.body.removeEventListener('touchstart', unlockAudio);
+}
+
+// Add event listeners to unlock audio on user interaction
+document.body.addEventListener('click', unlockAudio);
+document.body.addEventListener('touchstart', unlockAudio);

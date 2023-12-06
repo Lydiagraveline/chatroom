@@ -172,6 +172,7 @@ io.on('connection', (socket) => {
 
     // Shuffle the array of audio indices to get a randomized sequence
     const shuffledIndices = audioIndices.sort(() => Math.random() - 0.5);
+    console.log(shuffledIndices);
     // console.log(shuffledIndices)
 
     // Take the first 3 indices from the shuffled sequence
